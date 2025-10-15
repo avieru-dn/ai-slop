@@ -1,0 +1,31 @@
+# Development environment values
+# Override values.yaml for local development
+
+namespace:
+  create: true
+  name: grafana-test
+
+grafana:
+  server:
+    rootUrl: http://localhost:3000
+
+oauth:
+  azuread:
+    enabled: true
+    clientId: "b61c04d7-a6bf-41de-ae6a-f88587cdc800"
+    clientSecret: "YOUR_AZURE_CLIENT_SECRET_HERE"
+    tenantId: "662f82da-cf45-4bdf-b295-33b083f5d229"
+  
+  github:
+    enabled: true
+    clientId: "Ov23liUFQMIDwm6Ara2F"
+    clientSecret: "YOUR_GITHUB_CLIENT_SECRET"
+    # allowedOrganizations: "drivenets"  # Commented out for testing
+
+persistence:
+  enabled: false
+
+ingress:
+  enabled: false
+
+

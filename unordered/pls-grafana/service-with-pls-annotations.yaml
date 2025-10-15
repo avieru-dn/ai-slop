@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: grafana-test
+  annotations:
+    # Internal Load Balancer
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    
+    # Private Link Service - Automatically created by Azure Cloud Controller
+    service.beta.kubernetes.io/azure-pls-create: "true"
+    service.beta.kubernetes.io/azure-pls-name: "pls-grafana-managed"
+    service.beta.kubernetes.io/azure-pls-ip-configuration-subnet: "aks-subnet"
+    
+    # Optional: Control who can see/connect to PLS
+    # service.beta.kubernetes.io/azure-pls-visibility: "*"  # Everyone
+    # Or specific subscriptions:
+    service.beta.kubernetes.io/azure-pls-visibility: "00e10e35-0ad0-427e-893a-72f3b42387c1,cda76fc5-a3ee-4c98-b4ba-055125b3de93"
+    
+    # Optional: Auto-approval for specific subscriptions
+    # service.beta.kubernetes.io/azure-pls-auto-approval: "00e10e35-0ad0-427e-893a-72f3b42387c1"
+    
+    # Optional: Enable TCP Proxy v2
+    # service.beta.kubernetes.io/azure-pls-proxy-protocol: "true"
+    
+  labels:
+    app: grafana
+    component: observability
+    managed-by: argocd
+spec:
+  type: LoadBalancer
+  
+  # Optional: Static IP
+  # loadBalancerIP: "10.224.0.28"
+  
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  
+  selector:
+    app: grafana
+  
+  ports:
+    - name: web
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+
+

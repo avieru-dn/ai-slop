@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grafana-test
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-oauth-secrets
+  namespace: grafana-test
+type: Opaque
+stringData:
+  AZURE_CLIENT_SECRET: "YOUR_AZURE_CLIENT_SECRET_HERE"
+  GITHUB_CLIENT_SECRET: "YOUR_GITHUB_CLIENT_SECRET_HERE"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: grafana-test
+data:
+  grafana.ini: |
+    [server]
+    root_url = http://localhost:3000
+    serve_from_sub_path = false
+    http_port = 3000
+    
+    [security]
+    admin_user = admin
+    admin_password = admin123
+    disable_gravatar = true
+    
+    # Azure Entra ID OAuth Configuration
+    [auth.azuread]
+    enabled = true
+    name = Azure Entra ID
+    allow_sign_up = true
+    auto_login = false
+    client_id = b61c04d7-a6bf-41de-ae6a-f88587cdc800
+    client_secret = $__env{AZURE_CLIENT_SECRET}
+    scopes = openid email profile
+    auth_url = https://login.microsoftonline.com/662f82da-cf45-4bdf-b295-33b083f5d229/oauth2/v2.0/authorize
+    token_url = https://login.microsoftonline.com/662f82da-cf45-4bdf-b295-33b083f5d229/oauth2/v2.0/token
+    api_url = https://graph.microsoft.com/v1.0/me
+    use_pkce = true
+    allow_assign_grafana_admin = false
+    skip_org_role_sync = true
+    role_attribute_strict = false
+    allowed_domains = drivenets.com
+    # Role mapping disabled - no admin consent required
+    # All users will get the default role set in [users] section below
+    # To enable group-based roles: add 'GroupMember.Read.All' to scopes and get admin consent
+    
+    # GitHub OAuth Configuration
+    [auth.github]
+    enabled = true
+    name = GitHub
+    allow_sign_up = true
+    auto_login = false
+    client_id = Ov23liUFQMIDwm6Ara2F
+    client_secret = $__env{GITHUB_CLIENT_SECRET}
+    scopes = user:email,read:org
+    auth_url = https://github.com/login/oauth/authorize
+    token_url = https://github.com/login/oauth/access_token
+    api_url = https://api.github.com/user
+    # allowed_organizations = drivenets  # Commented out - allow any GitHub user
+    allow_assign_grafana_admin = false
+
+    
+    skip_org_role_sync = true
+    # Team-based role mapping (optional):
+    # team_ids = 12345678
+    # role_attribute_path = contains(teams[*].slug, 'admins') && 'GrafanaAdmin' || contains(teams[*].slug, 'editors') && 'Editor' || 'Viewer'
+    
+    [users]
+    auto_assign_org = true
+    auto_assign_org_role = Viewer
+    
+    [log]
+    mode = console
+    level = info
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: grafana-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: AZURE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: grafana-oauth-secrets
+              key: AZURE_CLIENT_SECRET
+        - name: GITHUB_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: grafana-oauth-secrets
+              key: GITHUB_CLIENT_SECRET
+        volumeMounts:
+        - name: grafana-config
+          mountPath: /etc/grafana/grafana.ini
+          subPath: grafana.ini
+      volumes:
+      - name: grafana-config
+        configMap:
+          name: grafana-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: grafana-test
+spec:
+  selector:
+    app: grafana
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP

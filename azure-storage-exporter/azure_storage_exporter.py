@@ -17,6 +17,7 @@ Metrics exposed:
 - azure_storage_container_version_count: Number of blob versions in each container
 - azure_storage_exporter_scrape_duration_seconds: Time taken to scrape metrics
 - azure_storage_exporter_last_scrape_timestamp: Timestamp of last successful scrape
+- azure_storage_exporter_last_azure_fetch_duration_seconds: Duration of the last Azure API fetch
 """
 
 import os
@@ -109,6 +110,10 @@ class AzureStorageCollector:
             'azure_storage_exporter_cache_age_seconds',
             'Age of the cached data in seconds'
         )
+        self.last_azure_fetch_duration = Gauge(
+            'azure_storage_exporter_last_azure_fetch_duration_seconds',
+            'Duration of the last Azure Storage API fetch in seconds'
+        )
 
     def _init_clients(self):
         """Initialize Azure SDK clients."""
@@ -174,7 +179,10 @@ class AzureStorageCollector:
             # If no cache exists yet, we must block and fetch data
             if self._cache is None:
                 logger.info("No cache exists - performing initial blocking fetch")
+                fetch_start = time.time()
                 containers_data = self._get_container_metrics()
+                fetch_duration = time.time() - fetch_start
+                self.last_azure_fetch_duration.set(fetch_duration)
                 self._cache = containers_data
                 self._cache_timestamp = time.time()
                 self.cache_age.set(0)
@@ -204,6 +212,10 @@ class AzureStorageCollector:
             # Fetch fresh data
             containers_data = self._get_container_metrics()
             
+            # Calculate duration and update metric
+            duration = time.time() - start_time
+            self.last_azure_fetch_duration.set(duration)
+            
             # Update cache atomically
             with self._cache_lock:
                 self._cache = containers_data
@@ -211,7 +223,6 @@ class AzureStorageCollector:
                 self._refresh_in_progress = False
                 self.cache_age.set(0)
             
-            duration = time.time() - start_time
             logger.info(f"Background refresh completed in {duration:.2f}s")
             
         except Exception as e:
