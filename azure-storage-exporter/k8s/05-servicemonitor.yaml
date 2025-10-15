@@ -1,0 +1,29 @@
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: azure-storage-exporter
+  namespace: eto-dapo11y
+  labels:
+    app: azure-storage-exporter
+spec:
+  namespaceSelector:
+    matchNames:
+    - dap-o11y
+  selector:
+    matchLabels:
+      app: azure-storage-exporter
+  endpoints:
+  - port: metrics
+    interval: 5m       # Scrape every 5 minutes (3 scrapes per 15min cache refresh)
+    scrapeTimeout: 10m # Allow 10 minutes for cold start / initial scrape
+    path: /metrics
+    scheme: http
+    relabelConfigs:
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+
+
+

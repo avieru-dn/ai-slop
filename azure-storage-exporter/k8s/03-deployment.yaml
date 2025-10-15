@@ -1,0 +1,66 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-storage-exporter
+  namespace: dap-o11y
+  labels:
+    app: azure-storage-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: azure-storage-exporter
+  template:
+    metadata:
+      labels:
+        app: azure-storage-exporter
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9358"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: azure-storage-exporter
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: exporter
+        image: dapdev.azurecr.io/sre-images/azure-storage-exporter:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - name: metrics
+          containerPort: 9358
+          protocol: TCP
+        env:
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: CACHE_TTL_SECONDS
+          value: "900"   # 15 minutes cache (aligns with 5min scrape interval)
+        - name: MAX_WORKERS
+          value: "10"    # Parallel workers for container processing
+        envFrom:
+        - secretRef:
+            name: azure-storage-exporter-credentials
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+
+
+

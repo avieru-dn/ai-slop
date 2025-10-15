@@ -1,0 +1,8 @@
+prometheus-client==0.19.0
+azure-identity==1.15.0
+azure-mgmt-storage==21.1.0
+azure-mgmt-monitor==6.0.2
+azure-storage-blob==12.19.0
+
+
+

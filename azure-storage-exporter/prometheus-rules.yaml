@@ -1,0 +1,139 @@
+---
+# Azure Storage Exporter - Prometheus Alerting Rules
+# This file contains example alerting rules for monitoring Azure Storage Accounts
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: azure-storage-exporter-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: azure_storage_alerts
+      interval: 5m
+      rules:
+        # Alert when storage account is near capacity (4.5TB of 5TB)
+        - alert: StorageAccountNearCapacity
+          expr: azure_storage_account_total_size_bytes / 1024 / 1024 / 1024 / 1024 > 4.5
+          for: 15m
+          labels:
+            severity: warning
+            component: azure-storage
+          annotations:
+            summary: "Storage account {{ $labels.storage_account }} is near capacity"
+            description: |
+              Storage account {{ $labels.storage_account }} in resource group {{ $labels.resource_group }}
+              has reached {{ $value | humanize }}TB of storage usage.
+              Consider cleaning up old data or increasing capacity.
+
+        # Alert when a container grows abnormally fast (50% in 1 hour)
+        - alert: ContainerGrowthAnomaly
+          expr: |
+            (
+              azure_storage_container_size_bytes - 
+              azure_storage_container_size_bytes offset 1h
+            ) / azure_storage_container_size_bytes offset 1h > 0.5
+          for: 10m
+          labels:
+            severity: warning
+            component: azure-storage
+          annotations:
+            summary: "Container {{ $labels.container_name }} growing rapidly"
+            description: |
+              Container {{ $labels.container_name }} in storage account {{ $labels.storage_account }}
+              has increased by {{ $value | humanizePercentage }} in the last hour.
+              This may indicate unexpected data growth or a potential issue.
+
+        # Alert when container is very large (>1TB)
+        - alert: ContainerVeryLarge
+          expr: azure_storage_container_size_bytes / 1024 / 1024 / 1024 / 1024 > 1
+          for: 30m
+          labels:
+            severity: info
+            component: azure-storage
+          annotations:
+            summary: "Container {{ $labels.container_name }} is very large"
+            description: |
+              Container {{ $labels.container_name }} in storage account {{ $labels.storage_account }}
+              has reached {{ $value | humanize }}TB.
+              Consider archiving old data or implementing lifecycle management policies.
+
+        # Alert when exporter is down
+        - alert: StorageExporterDown
+          expr: up{job="azure-storage-exporter"} == 0
+          for: 5m
+          labels:
+            severity: critical
+            component: azure-storage-exporter
+          annotations:
+            summary: "Azure Storage Exporter is down"
+            description: |
+              The Azure Storage Exporter has been unreachable for more than 5 minutes.
+              Storage metrics are not being collected.
+              Check the exporter pod status: kubectl get pods -n monitoring -l app=azure-storage-exporter
+
+        # Alert when exporter has errors
+        - alert: StorageExporterErrors
+          expr: rate(azure_storage_exporter_scrape_errors_total[5m]) > 0
+          for: 10m
+          labels:
+            severity: warning
+            component: azure-storage-exporter
+          annotations:
+            summary: "Azure Storage Exporter experiencing errors"
+            description: |
+              The Azure Storage Exporter is encountering errors at a rate of {{ $value | humanize }} errors/sec.
+              Check the exporter logs: kubectl logs -n monitoring -l app=azure-storage-exporter
+
+        # Alert when scrape duration is too high
+        - alert: StorageExporterSlowScrape
+          expr: azure_storage_exporter_scrape_duration_seconds > 60
+          for: 15m
+          labels:
+            severity: warning
+            component: azure-storage-exporter
+          annotations:
+            summary: "Azure Storage Exporter scraping slowly"
+            description: |
+              The Azure Storage Exporter is taking {{ $value | humanize }}s to scrape metrics.
+              This may indicate performance issues or a very large storage account.
+              Consider optimizing or adding more resources.
+
+        # Alert when blob count in a container is very high
+        - alert: ContainerHighBlobCount
+          expr: azure_storage_container_blob_count > 100000
+          for: 30m
+          labels:
+            severity: info
+            component: azure-storage
+          annotations:
+            summary: "Container {{ $labels.container_name }} has very high blob count"
+            description: |
+              Container {{ $labels.container_name }} in storage account {{ $labels.storage_account }}
+              has {{ $value | humanize }} blobs.
+              High blob counts may impact performance and listing operations.
+              Consider implementing a hierarchical structure or cleanup policies.
+
+        # Alert when storage account has grown significantly (20% in 24h)
+        - alert: StorageAccountRapidGrowth
+          expr: |
+            (
+              azure_storage_account_total_size_bytes - 
+              azure_storage_account_total_size_bytes offset 24h
+            ) / azure_storage_account_total_size_bytes offset 24h > 0.2
+          for: 1h
+          labels:
+            severity: info
+            component: azure-storage
+          annotations:
+            summary: "Storage account {{ $labels.storage_account }} growing rapidly"
+            description: |
+              Storage account {{ $labels.storage_account }} has grown by {{ $value | humanizePercentage }}
+              in the last 24 hours.
+              Review data ingestion patterns and ensure this growth is expected.
+
+
+
