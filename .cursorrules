@@ -1,0 +1,153 @@
+# Cursor Rules for ai-slop Repository
+
+## English Language Enhancement Rule
+
+When I ask you to review or improve my writing, grammar, or phrasing:
+- Provide corrected versions of sentences with grammatical errors
+- Suggest alternative phrasings that are more professional, clear, or concise
+- Highlight specific improvements (e.g., "Changed passive voice to active" or "Simplified complex sentence")
+- Offer 2-3 alternative phrasings when appropriate, ranked by formality or clarity
+- Point out common mistakes to help me learn (e.g., subject-verb agreement, article usage, preposition choices)
+- Focus on clarity, professionalism, and readability
+- Format corrections clearly:
+  ```
+  Original: [your sentence]
+  Corrected: [improved sentence]
+  Reason: [brief explanation]
+  
+  Alternatives:
+  1. [option 1] - [use case]
+  2. [option 2] - [use case]
+  ```
+
+## Remote Execution Code Rule
+
+When I prefix my request with "RDP:", "REMOTE:", or mention "execute remotely" or "run on another machine":
+- Return ONLY executable code/commands without explanations
+- Format output as ready-to-copy code blocks
+- No markdown explanations outside code blocks
+- No conversational text
+- Include only:
+  - Shell commands
+  - PowerShell scripts (if Windows target)
+  - Bash scripts (if Linux target)
+  - Configuration files (with clear filenames as comments)
+- Use this format:
+  ```bash
+  # filename: script_name.sh
+  [code here]
+  ```
+  or
+  ```powershell
+  # filename: script_name.ps1
+  [code here]
+  ```
+- For multi-file operations, separate each file clearly with filename comments
+- Assume the remote machine has standard tools unless I specify otherwise
+- Code should be production-ready and safe (no destructive operations without confirmation flags)
+
+## DevOps Focus Rule
+
+For all DevOps-related tasks in this repository:
+- Prioritize automation and repeatability
+- Follow Infrastructure as Code principles
+- Use environment variables instead of hardcoded values
+- Include error handling and logging in scripts
+- Apply principle of least privilege
+- Consider idempotency in all automation
+- Validate inputs and provide meaningful error messages
+
+## Azure-Specific Rule
+
+When working with Azure resources:
+- Use Azure CLI or PowerShell Az module commands
+- Include proper authentication context assumptions
+- Add resource tagging for cost tracking
+- Consider regional availability and compliance
+- Include backup and disaster recovery considerations
+- Use managed identities over service principals when possible
+
+## Kubernetes Rule
+
+When working with Kubernetes manifests:
+- Always include namespace specifications
+- Use resource limits and requests
+- Include health checks (liveness/readiness probes)
+- Follow security best practices (non-root users, read-only filesystems where possible)
+- Use ConfigMaps and Secrets appropriately
+- Include labels for better resource management
+- Consider high availability and scaling
+
+## Python Code Rule
+
+When writing Python code for this repository:
+- Use type hints for all function parameters and returns
+- Follow PEP 8 style guide
+- Include docstrings for functions and classes
+- Use logging instead of print statements
+- Handle exceptions gracefully
+- Use context managers for resource management
+- Write testable, modular code
+- Include requirements.txt or pyproject.toml updates when adding dependencies
+
+## Bash Scripting Rule
+
+When writing Bash scripts:
+- Always include shebang (#!/usr/bin/env bash)
+- Use `set -euo pipefail` for safer scripts
+- Include usage/help function
+- Validate all inputs
+- Use meaningful variable names
+- Add comments for complex logic
+- Use functions for reusability
+- Handle cleanup with trap
+- Check command availability before use
+- Provide exit codes and error messages
+
+## Documentation Rule
+
+When creating or updating documentation:
+- Use clear, concise language
+- Include examples for all features
+- Add troubleshooting sections
+- Keep README files up to date
+- Use proper markdown formatting
+- Include prerequisites and dependencies
+- Add diagrams for complex workflows
+- Version all breaking changes
+- Include contact/support information
+
+## Ansible Rule
+
+When working with Ansible:
+- Use fully qualified collection names (FQCN)
+- Implement idempotency in all tasks
+- Use ansible-vault for sensitive data
+- Include meaningful task names
+- Use handlers for service restarts
+- Organize with roles for reusability
+- Include tags for selective execution
+- Use variables appropriately (group_vars, host_vars)
+- Add comments for complex logic
+- Test with ansible-lint
+
+## Git Commit Message Rule
+
+When I ask you to generate commit messages:
+- Follow conventional commits format: `type(scope): subject`
+- Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build
+- Keep subject line under 50 characters
+- Use imperative mood ("Add feature" not "Added feature")
+- Include body for complex changes (wrap at 72 characters)
+- Reference issue numbers when applicable
+- Examples:
+  ```
+  feat(exporter): add Azure blob storage metrics support
+  
+  fix(k8s): correct service monitor selector labels
+  
+  docs(readme): update installation instructions
+  
+  chore(deps): bump prometheus-client to 0.19.0
+  ```
+
